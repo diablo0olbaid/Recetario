@@ -1,16 +1,15 @@
 export default async function handler(req, res) {
-  // ✅ Habilitar CORS para que funcione desde DY
+  // ✅ Habilitar CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-  // ✅ Responder preflight
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
 
-  // ✅ Validar input y API Key
+  // ⬇️ A partir de acá va todo lo que ya tenías 👇
   const { input } = req.query;
   const apiKey = process.env.OPENROUTER_API_KEY;
 
@@ -18,7 +17,6 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Falta input o API Key" });
   }
 
-  // ✅ Prompt bien exigente para que devuelva JSON real
   const prompt = `
 Respondé ÚNICAMENTE con un JSON válido con esta estructura exacta:
 
@@ -41,7 +39,6 @@ Pedido del usuario: "${input}"
   `;
 
   try {
-    // ✅ Llamada al modelo desde OpenRouter
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -49,7 +46,7 @@ Pedido del usuario: "${input}"
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "openai/gpt-3.5-turbo", // podés cambiar el modelo si querés
+        model: "openai/gpt-3.5-turbo",
         messages: [{ role: "user", content: prompt }]
       })
     });
