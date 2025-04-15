@@ -25,13 +25,29 @@ No agregues explicaciones. Pedido del usuario: "${input}"`
       })
     });
 
-    const data = await response.json();
-    const texto = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    const receta = JSON.parse(texto);
+    const raw = await response.text();
 
-    res.status(200).json(receta);
+    // 🔍 Mostramos la respuesta cruda para debug
+    console.log("➡️ Respuesta cruda de Gemini:");
+    console.log(raw);
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: "Gemini respondió con error", status: response.status });
+    }
+
+    // 🔧 Intentamos parsear texto a JSON
+    try {
+      const data = JSON.parse(raw);
+      const texto = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const receta = JSON.parse(texto);
+      return res.status(200).json(receta);
+    } catch (e) {
+      console.error("❌ Error al parsear JSON de Gemini:", e);
+      return res.status(500).json({ error: "Respuesta no interpretable como receta JSON" });
+    }
+
   } catch (err) {
-    console.error("Error en el endpoint:", err);
-    res.status(500).json({ error: "Fallo al generar receta" });
+    console.error("🔥 Error general en el endpoint:", err);
+    return res.status(500).json({ error: "Fallo al generar receta" });
   }
 }
