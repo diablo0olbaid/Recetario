@@ -7,49 +7,42 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/chat-bison-001:generateMessage?key=${apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `Respondé SOLO con un JSON así:
+        prompt: {
+          messages: [
+            {
+              author: "user",
+              content: `Respondé SOLO con un JSON así:
 {
   "nombre": "...",
   "ingredientes": ["..."],
   "pasos": ["..."]
 }
 No agregues explicaciones. Pedido del usuario: "${input}"`
-          }]
-        }]
+            }
+          ]
+        },
+        temperature: 0.7
       })
     });
 
     const raw = await response.text();
-
-    console.log("🔍 Respuesta cruda de Gemini:", raw);
+    console.log("📦 Respuesta cruda:", raw);
 
     if (!response.ok) {
-      return res.status(response.status).json({ error: "Error HTTP al llamar a Gemini", status: response.status });
+      return res.status(response.status).json({ error: "Error HTTP al llamar a PaLM", status: response.status });
     }
 
-    // Intentamos parsear la primera capa
-    let data;
-    try {
-      data = JSON.parse(raw);
-    } catch (e) {
-      console.error("❌ No se pudo hacer JSON.parse de la respuesta completa:", e);
-      return res.status(500).json({ error: "Respuesta no era JSON (raw):", raw });
-    }
-
-    const texto = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const data = JSON.parse(raw);
+    const texto = data.candidates?.[0]?.content;
 
     if (!texto) {
-      console.error("❌ Gemini no devolvió texto");
-      return res.status(500).json({ error: "La respuesta de Gemini no contiene texto interpretable", fullResponse: data });
+      return res.status(500).json({ error: "La respuesta de PaLM no contiene texto" });
     }
 
-    // Intentamos parsear la receta como JSON
     try {
       const receta = JSON.parse(texto);
       return res.status(200).json(receta);
@@ -59,7 +52,7 @@ No agregues explicaciones. Pedido del usuario: "${input}"`
     }
 
   } catch (err) {
-    console.error("🔥 Error general en el endpoint:", err);
+    console.error("🔥 Error general:", err);
     return res.status(500).json({ error: "Fallo al generar receta" });
   }
 }
