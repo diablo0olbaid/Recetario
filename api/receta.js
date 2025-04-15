@@ -13,7 +13,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         contents: [{
           parts: [{
-            text: `Respondé SOLO con un JSON con esta estructura:
+            text: `Respondé SOLO con un JSON así:
 {
   "nombre": "...",
   "ingredientes": ["..."],
@@ -27,23 +27,35 @@ No agregues explicaciones. Pedido del usuario: "${input}"`
 
     const raw = await response.text();
 
-    // 🔍 Mostramos la respuesta cruda para debug
-    console.log("➡️ Respuesta cruda de Gemini:");
-    console.log(raw);
+    console.log("🔍 Respuesta cruda de Gemini:", raw);
 
     if (!response.ok) {
-      return res.status(response.status).json({ error: "Gemini respondió con error", status: response.status });
+      return res.status(response.status).json({ error: "Error HTTP al llamar a Gemini", status: response.status });
     }
 
-    // 🔧 Intentamos parsear texto a JSON
+    // Intentamos parsear la primera capa
+    let data;
     try {
-      const data = JSON.parse(raw);
-      const texto = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      data = JSON.parse(raw);
+    } catch (e) {
+      console.error("❌ No se pudo hacer JSON.parse de la respuesta completa:", e);
+      return res.status(500).json({ error: "Respuesta no era JSON (raw):", raw });
+    }
+
+    const texto = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!texto) {
+      console.error("❌ Gemini no devolvió texto");
+      return res.status(500).json({ error: "La respuesta de Gemini no contiene texto interpretable", fullResponse: data });
+    }
+
+    // Intentamos parsear la receta como JSON
+    try {
       const receta = JSON.parse(texto);
       return res.status(200).json(receta);
     } catch (e) {
-      console.error("❌ Error al parsear JSON de Gemini:", e);
-      return res.status(500).json({ error: "Respuesta no interpretable como receta JSON" });
+      console.error("❌ Error al parsear JSON de receta:", e);
+      return res.status(500).json({ error: "Texto no era JSON", texto });
     }
 
   } catch (err) {
