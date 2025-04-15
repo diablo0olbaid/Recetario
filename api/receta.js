@@ -1,40 +1,51 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const genAI = new GoogleGenerativeAI("TU_API_KEY");
-
 export default async function handler(req, res) {
   const { input } = req.query;
+  const apiKey = process.env.OPENROUTER_API_KEY;
 
-  if (!input) {
-    return res.status(400).json({ error: "Falta input" });
+  if (!input || !apiKey) {
+    return res.status(400).json({ error: "Falta input o API Key" });
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "chat-bison-001" });
-
-    const result = await model.generateContent([
-      {
-        role: "user",
-        parts: [
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "openchat/openchat-7b", // o "openai/gpt-3.5-turbo", "mistralai/mixtral-8x7b"
+        messages: [
           {
-            text: `Respondé SOLO con un JSON así:
+            role: "user",
+            content: `Quiero una receta en formato JSON con este formato:
 {
   "nombre": "...",
   "ingredientes": ["..."],
   "pasos": ["..."]
 }
-No agregues explicaciones. Pedido del usuario: ${input}`
+Pedido del usuario: ${input}`
           }
         ]
-      }
-    ]);
+      })
+    });
 
-    const responseText = result.response.text();
-    const receta = JSON.parse(responseText);
+    const data = await response.json();
+    const texto = data.choices?.[0]?.message?.content;
 
-    return res.status(200).json(receta);
-  } catch (error) {
-    console.error("❌ Error al generar receta:", error);
-    return res.status(500).json({ error: "Fallo al generar receta", details: error.message });
+    if (!texto) {
+      return res.status(500).json({ error: "Sin contenido en la respuesta", raw: data });
+    }
+
+    try {
+      const receta = JSON.parse(texto);
+      return res.status(200).json(receta);
+    } catch {
+      return res.status(200).json({ textoPlano: texto, nota: "No era JSON válido, pero puede ser útil como texto." });
+    }
+
+  } catch (err) {
+    console.error("❌ Error al llamar a OpenRouter:", err);
+    return res.status(500).json({ error: "Fallo al generar receta", detalle: err.message });
   }
 }
