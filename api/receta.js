@@ -33,10 +33,9 @@ No agregues explicaciones. Pedido del usuario: "${input}"`
     });
 
     const raw = await response.text();
-    console.log("📦 Respuesta RAW:", raw);
+    console.log("📦 Respuesta cruda:", raw);
 
     if (!response.ok) {
-      console.error("❌ Gemini respondió con error HTTP:", response.status);
       return res.status(response.status).json({ error: "Error HTTP al llamar a PaLM", status: response.status });
     }
 
@@ -48,18 +47,18 @@ No agregues explicaciones. Pedido del usuario: "${input}"`
       return res.status(500).json({ error: "Respuesta no era JSON", raw });
     }
 
-    const texto = data.candidates?.[0]?.content;
-
-    if (!texto) {
-      console.error("❌ No se recibió texto en la respuesta:", data);
-      return res.status(500).json({ error: "La respuesta no contiene texto interpretable" });
+    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+      console.error("❌ Estructura inesperada:", data);
+      return res.status(500).json({ error: "Respuesta inesperada de PaLM", data });
     }
+
+    const texto = data.candidates[0].content;
 
     try {
       const receta = JSON.parse(texto);
       return res.status(200).json(receta);
     } catch (e) {
-      console.error("❌ Texto no era JSON válido:", texto);
+      console.error("❌ Error al parsear JSON de receta:", e);
       return res.status(500).json({ error: "Texto no era JSON válido", texto });
     }
 
