@@ -7,14 +7,24 @@ export default async function handler(req, res) {
   }
 
   const prompt = `
-Respondé SOLO con un JSON válido con esta estructura:
+Respondé ÚNICAMENTE con un JSON válido con esta estructura exacta:
+
 {
   "nombre": "string",
-  "ingredientes": ["..."],
-  "pasos": ["..."]
+  "ingredientes": ["string", "string", ...],
+  "pasos": ["string", "string", ...]
 }
-No incluyas explicaciones, saludos ni introducciones.
-Tu única respuesta debe ser el JSON. Pedido del usuario: "${input}"
+
+No agregues explicaciones ni encabezados. No uses texto fuera del JSON. Solo quiero un JSON puro.
+
+Ejemplo válido:
+{
+  "nombre": "Arroz con pollo",
+  "ingredientes": ["arroz", "pollo", "cebolla"],
+  "pasos": ["Hervir arroz", "Saltear pollo", "Mezclar"]
+}
+
+Pedido del usuario: "${input}"
 `;
 
   try {
@@ -25,7 +35,7 @@ Tu única respuesta debe ser el JSON. Pedido del usuario: "${input}"
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "mistralai/mistral-7b-instruct", // Podés cambiarlo por otro si querés
+        model: "openai/gpt-3.5-turbo"", // Podés cambiarlo por otro si querés
         messages: [
           { role: "user", content: prompt }
         ]
