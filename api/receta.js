@@ -14,7 +14,7 @@ export default async function handler(req, res) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "openchat/openchat-7b", // Podés cambiarlo por "mistralai/mixtral-8x7b" o "openai/gpt-3.5-turbo"
+        model: "openchat/openchat-7b",
         messages: [
           {
             role: "user",
@@ -41,7 +41,7 @@ Pedido del usuario: ${input}`
       const receta = JSON.parse(texto);
       return res.status(200).json(receta);
     } catch {
-      return res.status(200).json({ textoPlano: texto, nota: "No era JSON válido, pero lo devolvemos igual como texto." });
+      return res.status(200).json({ textoPlano: texto, nota: "No era JSON válido, pero se devuelve igual." });
     }
 
   } catch (err) {
