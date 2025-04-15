@@ -6,26 +6,28 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Falta input o API Key" });
   }
 
+  const prompt = `
+Respondé SOLO con un JSON válido con esta estructura:
+{
+  "nombre": "string",
+  "ingredientes": ["..."],
+  "pasos": ["..."]
+}
+No incluyas explicaciones, saludos ni introducciones.
+Tu única respuesta debe ser el JSON. Pedido del usuario: "${input}"
+`;
+
   try {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "openchat/openchat-7b",
+        model: "mistralai/mistral-7b-instruct", // Podés cambiarlo por otro si querés
         messages: [
-          {
-            role: "user",
-            content: `Quiero una receta en formato JSON con este formato:
-{
-  "nombre": "...",
-  "ingredientes": ["..."],
-  "pasos": ["..."]
-}
-Pedido del usuario: ${input}`
-          }
+          { role: "user", content: prompt }
         ]
       })
     });
@@ -33,19 +35,17 @@ Pedido del usuario: ${input}`
     const data = await response.json();
     const texto = data.choices?.[0]?.message?.content;
 
-    if (!texto) {
-      return res.status(500).json({ error: "Sin contenido en la respuesta", raw: data });
+    let receta;
+    try {
+      receta = JSON.parse(texto);
+    } catch (e) {
+      receta = { textoPlano: texto, nota: "No era JSON válido, pero se devuelve igual." };
     }
 
-    try {
-      const receta = JSON.parse(texto);
-      return res.status(200).json(receta);
-    } catch {
-      return res.status(200).json({ textoPlano: texto, nota: "No era JSON válido, pero se devuelve igual." });
-    }
+    res.status(200).json(receta);
 
   } catch (err) {
-    console.error("❌ Error al llamar a OpenRouter:", err);
-    return res.status(500).json({ error: "Fallo al generar receta", details: err.message });
+    console.error("Error en el endpoint:", err);
+    res.status(500).json({ error: "Fallo al generar receta", details: err.message });
   }
 }
