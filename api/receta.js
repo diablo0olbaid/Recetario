@@ -1,6 +1,18 @@
 export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   const { input } = req.query;
   const apiKey = process.env.OPENROUTER_API_KEY;
+
+  // resto del código...
+
 
   if (!input || !apiKey) {
     return res.status(400).json({ error: "Falta input o API Key" });
