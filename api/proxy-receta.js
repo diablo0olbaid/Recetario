@@ -6,17 +6,17 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Falta el input" });
     }
 
-    const response = await fetch(
-      `https://recetario-ffv9c6zr4-gastons-projects-b2e4ce12.vercel.app/api/receta?input=${encodeURIComponent(input)}`
-    );
+    const url = `http://localhost:3000/api/receta?input=${encodeURIComponent(input)}`;
+
+    const response = await fetch(url);
 
     if (!response.ok) {
-      return res.status(500).json({ error: "Error en la llamada al endpoint original", status: response.status });
+      return res.status(500).json({ error: "Error en llamada interna", status: response.status });
     }
 
-    const json = await response.json();
-    return res.status(200).json(json);
-  } catch (e) {
-    return res.status(500).json({ error: "Fallo general en proxy", detalle: e.message });
+    const data = await response.json();
+    return res.status(200).json(data);
+  } catch (err) {
+    return res.status(500).json({ error: "Fallo general en proxy", detalle: err.message });
   }
 }
